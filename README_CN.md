@@ -1,4 +1,11 @@
 ## Traning
+### 配置环境
+
+```
+$ conda env update -n sam --file environment/sam_env.yaml
+$ conda activate sam
+```
+
 ### 准备数据
 首先修改configs/paths_config.py，修改如下字段：
 ```
@@ -10,38 +17,7 @@ dataset_paths = {
 
 CelebAMask-HQ的repo：https://github.com/switchablenorms/CelebAMask-HQ，下载方法和FFHQ中GDrive的下载方法一致。
 
-FFHQ下载方法参看我fork的ffhq dataset的repo。
-
-FFHQ images1024x1024 resize到images256x256
-
-```
-from PIL import Image
-import os
-
-in_folder = 'images1024x1024'
-out_folder = 'images256x256'
-
-os.makedirs(out_folder, exist_ok=True)
-
-IMG_EXTENSIONS = [
-    '.jpg', '.JPG', '.jpeg', '.JPEG',
-    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', '.tiff'
-]
-
-def is_image_file(filename):
-    return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
-
-for p, d, fs in os.walk(in_folder):
-    for f in fs:
-        print(f)
-        if is_image_file(f):
-            in_path = os.path.join(in_folder, f)
-            out_path = os.path.join(out_folder, f)
-            im = Image.open(in_path)
-            new_size = (256, 256)
-            im = im.resize(new_size)
-            im.save(out_path)
-```
+FFHQ下载方法参看我fork的ffhq dataset的repo，只用下载zips里的image1024x1024即可，unzip后执行resize.py将images1024x1024 resize到images256x256。
 
 configs/paths_config.py，下载pretrained model，注意先将各个共享文件的快捷链接加到自己的云盘。
 ```
