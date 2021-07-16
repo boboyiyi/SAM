@@ -1,6 +1,7 @@
 """
 This file defines the core research contribution
 """
+from contextlib import ContextDecorator
 import copy
 from argparse import Namespace
 
@@ -18,6 +19,7 @@ class pSp(nn.Module):
 	def __init__(self, opts):
 		super(pSp, self).__init__()
 		self.set_opts(opts)
+		# n_styles为何这么计算？
 		self.n_styles = int(math.log(self.opts.output_size, 2)) * 2 - 2
 		# Define architecture
 		self.encoder = self.set_encoder()
@@ -62,13 +64,17 @@ class pSp(nn.Module):
 		if input_code:
 			codes = x
 		else:
+			# codes shape: [B, 18, 512]
+			# [18, 512]是StyleGAN2的latent space W+
 			codes = self.encoder(x)
 			# normalize with respect to the center of an average face
 			if self.opts.start_from_latent_avg:
 				codes = codes + self.latent_avg
 			# normalize with respect to the latent of the encoded image of pretrained pSp encoder
+			# 论文里描述的流程，用pSp encoder对没有age channel的原图像进行编码，也会得到[B, 18, 512]
 			elif self.opts.start_from_encoded_w_plus:
 				with torch.no_grad():
+					# x[:, :-1, :, :]即去掉了age channel
 					encoded_latents = self.pretrained_encoder(x[:, :-1, :, :])
 					encoded_latents = encoded_latents + self.latent_avg
 				codes = codes + encoded_latents

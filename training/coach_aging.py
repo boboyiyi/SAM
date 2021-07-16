@@ -75,10 +75,15 @@ class Coach:
 			self.opts.save_interval = self.opts.max_steps
 
 	def perform_forward_pass(self, x):
+		# 这里x的channels是4，带了age的channel
 		y_hat, latent = self.net.forward(x, return_latents=True)
+		# y_hat shape: [B, C, H, W]
+		# latent shape: [B, 18, 512]
 		return y_hat, latent
 
 	def __set_target_to_source(self, x, input_ages):
+		# for img, age in zip(x, input_ages)，这里x是[B, C, H, W]，input_ages是[B,]
+		# 这种写法是在Batch维度拆分Batch，得到batch中的样本
 		return [torch.cat((img, age * torch.ones((1, img.shape[1], img.shape[2])).to(self.device)))
 				for img, age in zip(x, input_ages)]
 
@@ -90,20 +95,24 @@ class Coach:
 				x, y = x.to(self.device).float(), y.to(self.device).float()
 				self.optimizer.zero_grad()
 
+				# 这里input_ages维度为(batch_size, )，用网络预测图像中人脸的年龄
 				input_ages = self.aging_loss.extract_ages(x) / 100.
 
 				# perform no aging in 33% of the time
+				# 33%的概率不做年龄变化
 				no_aging = random.random() <= (1. / 3)
 				if no_aging:
 					x_input = self.__set_target_to_source(x=x, input_ages=input_ages)
 				else:
 					x_input = [self.age_transformer(img.cpu()).to(self.device) for img in x]
-
+				# 这里x_input[0].shape是[4, 256, 256]，第4个channel是年龄channel，全是一样的值
+				# 将list stack成一个Tensor [B, C, H, W]
 				x_input = torch.stack(x_input)
 				target_ages = x_input[:, -1, 0, 0]
 
 				# perform forward/backward pass on real images
 				y_hat, latent = self.perform_forward_pass(x_input)
+				# 
 				loss, loss_dict, id_logs = self.calc_loss(x, y, y_hat, latent,
 														  target_ages=target_ages,
 														  input_ages=input_ages,

@@ -21,10 +21,8 @@ def main():
 	pprint.pprint(opts_dict)
 	with open(os.path.join(opts.exp_dir, 'opt.json'), 'w') as f:
 		json.dump(opts_dict, f, indent=4, sort_keys=True)
-
 	coach = Coach(opts)
 	coach.train()
-
 
 if __name__ == '__main__':
 	main()

@@ -11,12 +11,14 @@ class AgeTransformer(object):
 		img = self.add_aging_channel(img)
 		return img
 
+	# 给图片添加年龄channel
 	def add_aging_channel(self, img):
 		target_age = self.__get_target_age()
 		target_age = int(target_age) / 100  # normalize aging amount to be in range [-1,1]
 		img = torch.cat((img, target_age * torch.ones((1, img.shape[1], img.shape[2]))))
 		return img
 
+	# 在[0, 101]之间uniform生成随机数，作为待转年龄
 	def __get_target_age(self):
 		if self.target_age == "uniform_random":
 			return np.random.randint(low=0., high=101, size=1)[0]

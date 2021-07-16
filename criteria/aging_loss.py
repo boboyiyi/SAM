@@ -29,6 +29,7 @@ class AgingLoss(nn.Module):
         return predict_age
 
     def extract_ages(self, x):
+        # resize image to (224, 224)
         x = F.interpolate(x, size=(224, 224), mode='bilinear')
         predict_age_pb = self.age_net(x)['fc8']
         predicted_age = self.__get_predicted_age(predict_age_pb)
