@@ -509,8 +509,6 @@ class Generator(nn.Module):
                 latent = styles[0]
 
         else:
-            print('????')
-            input()
             if inject_index is None:
                 inject_index = random.randint(1, self.n_latent - 1)
 

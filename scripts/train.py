@@ -12,7 +12,6 @@ sys.path.append("..")
 from options.train_options import TrainOptions
 from training.coach_aging import Coach
 
-
 def main():
 	opts = TrainOptions().parse()
 	os.makedirs(opts.exp_dir, exist_ok=True)

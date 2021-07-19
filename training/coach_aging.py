@@ -111,6 +111,7 @@ class Coach:
 				target_ages = x_input[:, -1, 0, 0]
 
 				# perform forward/backward pass on real images
+				# y_hat即为论文中Fig.2的的y_out
 				y_hat, latent = self.perform_forward_pass(x_input)
 				# 
 				loss, loss_dict, id_logs = self.calc_loss(x, y, y_hat, latent,
@@ -121,6 +122,7 @@ class Coach:
 				loss.backward()
 
 				# perform cycle on generate images by setting the target ages to the original input ages
+				# 这里y_hat_clone和input_ages_clone感觉只用detach就可以了，没必要clone以及保留梯度
 				y_hat_clone = y_hat.clone().detach().requires_grad_(True)
 				input_ages_clone = input_ages.clone().detach().requires_grad_(True)
 				y_hat_inverse = self.__set_target_to_source(x=y_hat_clone, input_ages=input_ages_clone)
@@ -133,6 +135,7 @@ class Coach:
 																	  no_aging=no_aging,
 																	  data_type="cycle")
 				loss.backward()
+				# step之前多次backward的梯度会叠加在一起
 				self.optimizer.step()
 
 				# combine the logs of both forwards
@@ -173,8 +176,10 @@ class Coach:
 
 	def validate(self):
 		self.net.eval()
+		# agg = Aggregate
 		agg_loss_dict = []
 		for batch_idx, batch in enumerate(self.test_dataloader):
+			# 论文配置中，这里x和y是完全一致的。
 			x, y = batch
 			with torch.no_grad():
 				x, y = x.to(self.device).float(), y.to(self.device).float()
@@ -276,6 +281,7 @@ class Coach:
 		print(f"Number of test samples: {len(test_dataset)}")
 		return train_dataset, test_dataset
 
+	# 这里data_type分“real”和“cycle”，cycle就是论文中表述的将y_hat和source_age结合在一起还原原图像，real则是把原图像和target_age放在一起学习新图像
 	def calc_loss(self, x, y, y_hat, latent, target_ages, input_ages, no_aging, data_type="real"):
 		loss_dict = {}
 		id_logs = []
@@ -284,19 +290,26 @@ class Coach:
 			weights = None
 			if self.opts.use_weighted_id_loss:  # compute weighted id loss only on forward pass
 				age_diffs = torch.abs(target_ages - input_ages)
+				# 论文中的Eq.(10)
 				weights = train_utils.compute_cosine_weights(x=age_diffs)
 			loss_id, sim_improvement, id_logs = self.id_loss(y_hat, y, x, label=data_type, weights=weights)
+			
 			loss_dict[f'loss_id_{data_type}'] = float(loss_id)
 			loss_dict[f'id_improve_{data_type}'] = float(sim_improvement)
 			loss = loss_id * self.opts.id_lambda
+		# Eq. (7)
 		if self.opts.l2_lambda > 0:
 			loss_l2 = F.mse_loss(y_hat, y)
 			loss_dict[f'loss_l2_{data_type}'] = float(loss_l2)
+			
 			if data_type == "real" and not no_aging:
+				# 如果是正向阶段并且改变了年龄
 				l2_lambda = self.opts.l2_lambda_aging
 			else:
+				# cycle阶段或者年龄未变
 				l2_lambda = self.opts.l2_lambda
 			loss += loss_l2 * l2_lambda
+		# Eq. (8)
 		if self.opts.lpips_lambda > 0:
 			loss_lpips = self.lpips_loss(y_hat, y)
 			loss_dict[f'loss_lpips_{data_type}'] = float(loss_lpips)
@@ -313,11 +326,14 @@ class Coach:
 			loss_l2_crop = F.mse_loss(y_hat[:, :, 35:223, 32:220], y[:, :, 35:223, 32:220])
 			loss_dict['loss_l2_crop'] = float(loss_l2_crop)
 			loss += loss_l2_crop * self.opts.l2_lambda_crop
+		# 论文中描述的regularization loss，使得生成的latent尽量和平均latent接近
 		if self.opts.w_norm_lambda > 0:
 			loss_w_norm = self.w_norm_loss(latent, latent_avg=self.net.latent_avg)
 			loss_dict[f'loss_w_norm_{data_type}'] = float(loss_w_norm)
 			loss += loss_w_norm * self.opts.w_norm_lambda
+		# Eq. (11)
 		if self.opts.aging_lambda > 0:
+			# 提取y_hat的age，和target_ages算mse得到loss
 			aging_loss, id_logs = self.aging_loss(y_hat, y, target_ages, id_logs, label=data_type)
 			loss_dict[f'loss_aging_{data_type}'] = float(aging_loss)
 			loss += aging_loss * self.opts.aging_lambda

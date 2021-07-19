@@ -1,6 +1,6 @@
 dataset_paths = {
-    'celeba_test': '/data4/fanbo/database/CelebAMask-HQ/CelebA-HQ-img',
-    'ffhq': '/data4/fanbo/database/test/zips/images256x256',
+    'celeba_test': '/mnt/cephfs/fanbo/database/CelebAMask-HQ/CelebA-HQ-img',
+    'ffhq': '/mnt/cephfs/fanbo/database/ffhq-dataset/zips/images256x256',
 }
 
 model_paths = {

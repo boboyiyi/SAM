@@ -23,7 +23,11 @@ class IDLoss(nn.Module):
         n_samples = x.shape[0]
         x_feats = self.extract_feats(x)
         y_feats = self.extract_feats(y)
+        # x_feats的norm2都是1，所以后续的cosine distance就可以直接点积，因为分母为1
+        # test = torch.norm(x_feats, dim=1)
+        # x_feats shape: [B, 512]
         y_hat_feats = self.extract_feats(y_hat)
+        # 把y_feats当成常量
         y_feats = y_feats.detach()
         total_loss = 0
         sim_improvement = 0
@@ -47,6 +51,7 @@ class IDLoss(nn.Module):
             if weights is not None:
                 loss = weights[i] * loss
 
+            # 因为loss乘以了weight，所以sim_improvement和loss并非正负关系
             total_loss += loss
             id_diff = float(diff_target) - float(diff_views)
             sim_improvement += id_diff

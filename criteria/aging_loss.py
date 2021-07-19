@@ -46,6 +46,7 @@ class AgingLoss(nn.Module):
 
         for i in range(n_samples):
             # if id logs for the same exists, update the dictionary
+            # update给id_logs[i]这个dict中添加key value
             if len(id_logs) > i:
                 id_logs[i].update({f'input_age_{label}': float(input_ages[i]) * 100,
                                    f'output_age_{label}': float(output_ages[i]) * 100,

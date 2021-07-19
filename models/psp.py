@@ -90,11 +90,14 @@ class pSp(nn.Module):
 					codes[:, i] = 0
 
 		input_is_latent = (not input_code) or (input_is_full)
+		# [codes]将Tensor放入一个list中
 		images, result_latent = self.decoder([codes],
 											 input_is_latent=input_is_latent,
 											 randomize_noise=randomize_noise,
 											 return_latents=return_latents)
-
+		# 在论文配置中result_latent和codes实际是一致的，images是通过StyleGAN2生成的图像
+		# images shape: [B, 3, 1024, 1024]
+		# 这里返回的images是1024x1024的，通过均值池化缩小到256X256
 		if resize:
 			images = self.face_pool(images)
 
