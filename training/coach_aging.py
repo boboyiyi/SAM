@@ -63,6 +63,7 @@ class Coach:
 		self.age_transformer = AgeTransformer(target_age=self.opts.target_age)
 
 		# Initialize logger
+		# 这里指定了log地址
 		log_dir = os.path.join(opts.exp_dir, 'logs')
 		os.makedirs(log_dir, exist_ok=True)
 		self.logger = SummaryWriter(log_dir=log_dir)
@@ -224,14 +225,16 @@ class Coach:
 			agg_loss_dict.append(cur_loss_dict)
 
 			# Logging related
+			# 每一个batch记录，这里没有global_step限制，所以用subscript记录batch_idx。
 			self.parse_and_log_images(id_logs, x, y, y_hat, y_recovered, title='images/test/faces',
 									  subscript='{:04d}'.format(batch_idx))
 
 			# For first step just do sanity test on small amount of data
+			# 第一个step，网络还很不准，如果batch个数大于4，直接返回不记录loss到log
 			if self.global_step == 0 and batch_idx >= 4:
 				self.net.train()
 				return None  # Do not log, inaccurate in first batch
-
+		# 将得到的batch的loss取均值作为test的loss
 		loss_dict = train_utils.aggregate_loss_dict(agg_loss_dict)
 		self.log_metrics(loss_dict, prefix='test')
 		self.print_metrics(loss_dict, prefix='test')
@@ -353,6 +356,8 @@ class Coach:
 
 	def parse_and_log_images(self, id_logs, x, y, y_hat, y_recovered, title, subscript=None, display_count=2):
 		im_data = []
+		# x, y, y_hat, y_recovered都是[B, 3, 256, 256]
+		# display_count就是要取batch的前几个
 		for i in range(display_count):
 			cur_im_data = {
 				'input_face': common.tensor2im(x[i]),
@@ -374,6 +379,7 @@ class Coach:
 		if subscript:
 			path = os.path.join(self.logger.log_dir, name, '{}_{:04d}.jpg'.format(subscript, step))
 		else:
+			# :xxxx指定格式，04d表示4位整数，不够高位补零
 			path = os.path.join(self.logger.log_dir, name, '{:04d}.jpg'.format(step))
 		os.makedirs(os.path.dirname(path), exist_ok=True)
 		fig.savefig(path)

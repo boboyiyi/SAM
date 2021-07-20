@@ -19,6 +19,10 @@ dataset_paths = {
 
 CelebAMask-HQ的[repo](https://github.com/switchablenorms/CelebAMask-HQ)，下载方法和FFHQ中GDrive的下载方法一致。
 
+```
+ls -A1 CelebA-HQ-img | head -n 100 | xargs -I {} cp CelebA-HQ-img/{} CelebA-HQ-img-test/
+```
+
 FFHQ下载方法参看我fork的ffhq dataset的repo，只用下载zips里的image1024x1024即可，unzip后执行resize.py将images1024x1024 resize到images256x256。
 
 configs/paths_config.py，下载pretrained model，注意先将各个共享文件的快捷链接加到自己的云盘。
@@ -55,9 +59,9 @@ x_input即为图中将x和α_t结合起来的输入x_age，E_age即为图中的�
 
 ```
 images, result_latent = self.decoder([codes],
-											 input_is_latent=input_is_latent,
-											 randomize_noise=randomize_noise,
-											 return_latents=return_latents)
+									 input_is_latent=input_is_latent,
+									 randomize_noise=randomize_noise,
+									 return_latents=return_latents)
 ```
 
 这部分代码就是预训的StyleGAN2，用刚才得到的黄色部分的latent生成图像，这里images的shape是[B, 3， 1024， 1024]，需要resize到256x256，代码中采用均值池化的方法完成。
@@ -68,10 +72,10 @@ images, result_latent = self.decoder([codes],
 
 ```
 loss, loss_dict, id_logs = self.calc_loss(x, y, y_hat, latent,
-														  target_ages=target_ages,
-														  input_ages=input_ages,
-														  no_aging=no_aging,
-														  data_type="real")
+										  target_ages=target_ages,
+										  input_ages=input_ages,
+										  no_aging=no_aging,
+										  data_type="real")
 ```
 
 这是论文最复杂的部分，上述代码里的data_type有两个取值，"real"和"cycle"，real就是上述的正常流程，cycle指的是预测出来的y_out和x的预测年龄α_s（“真实”年龄）组成新的输入去得到原图的预测（故名为cycle），两个模式的loss计算有区别，这里挑代码中不容易理解的点记录。
@@ -109,3 +113,43 @@ loss_id, sim_improvement, id_logs = self.id_loss(y_hat, y, x, label=data_type, w
 cycle loss即为将预测的y_out当成x，x预测的age当成α_s，即用待转年龄预测的人脸和原图原始年龄当成输入预测原始人脸，形成cycle。loss计算和正向一致，单独加了一个权重。
 
 至此，loss部分全部算完。
+
+### Log
+
+在训练时适当地加一些log记录以及分析训练的情况。
+
+```
+if self.global_step % self.opts.image_interval == 0 or \
+						(self.global_step < 1000 and self.global_step % 25 == 0):
+					self.parse_and_log_images(id_logs, x, y, y_hat, y_recovered,
+											  title='images/train/faces')
+```
+
+在aging任务中image_interval为100，在global_step在1000以内的，每25个step记录一次log。
+
+这里记录下vis_faces函数，matplotlib.pyplot的figsize是按英寸算的，每英寸像素点 = 英寸 * dpi，而函数默认的dpi是100，所以这里的实际fig分辨率则是1200x800。
+
+```
+gs = fig.add_gridspec(display_count, 4)
+```
+
+这句话将fig划分成2x4的网格，我们可以用subplot指定子图占用哪个或哪几个网格。绘图可以参考相关代码。
+
+最后打印记录相关loss即可：
+
+```
+self.print_metrics(loss_dict, prefix='train')
+self.log_metrics(loss_dict, prefix='train')
+```
+
+### Train
+
+```
+nohup sh train.sh > log.txt 2>&1 &
+```
+
+监控log：
+
+```
+tail -f log.txt
+```

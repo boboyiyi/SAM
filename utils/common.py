@@ -18,6 +18,7 @@ def tensor2im(var):
 
 def vis_faces(log_hooks):
 	display_count = len(log_hooks)
+	# figsize是按英寸算的，每英寸 = figsize * dpi，dpi默认是100，所以此时图像分辨率是1200x800
 	fig = plt.figure(figsize=(12, 4 * display_count))
 	gs = fig.add_gridspec(display_count, 4)
 	for i in range(display_count):

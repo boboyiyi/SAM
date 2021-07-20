@@ -1,5 +1,5 @@
 dataset_paths = {
-    'celeba_test': '/mnt/cephfs/fanbo/database/CelebAMask-HQ/CelebA-HQ-img',
+    'celeba_test': '/mnt/cephfs/fanbo/database/CelebAMask-HQ/CelebA-HQ-img-test',
     'ffhq': '/mnt/cephfs/fanbo/database/ffhq-dataset/zips/images256x256',
 }
 

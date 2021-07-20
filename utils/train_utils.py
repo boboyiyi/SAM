@@ -5,6 +5,7 @@ def aggregate_loss_dict(agg_loss_dict):
 	mean_vals = {}
 	for output in agg_loss_dict:
 		for key in output:
+			# Python 字典 setdefault() 函数和 get()方法 类似, 如果键不存在于字典中，将会添加键并将值设为默认值。
 			mean_vals[key] = mean_vals.setdefault(key, []) + [output[key]]
 	for key in mean_vals:
 		if len(mean_vals[key]) > 0:

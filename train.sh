@@ -2,7 +2,7 @@ python scripts/train.py \
 --dataset_type=ffhq_aging \
 --exp_dir=./sam_exp \
 --workers=6 \
---batch_size=4 \
+--batch_size=6 \
 --test_batch_size=6 \
 --test_workers=6 \
 --val_interval=2500 \
